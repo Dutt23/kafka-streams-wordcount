@@ -28,7 +28,6 @@ public class WordCountApp {
         
        StreamsBuilder builder = new StreamsBuilder();
        KStream<String, String> wordCountInput = builder.stream("word-count-input");
-       
        KTable<String, Long> wordCounts = wordCountInput.mapValues(value -> value.toLowerCase())
        .flatMapValues(value -> Arrays.asList(value.split(" ")))
        .selectKey((key, value) -> value)
@@ -40,7 +39,7 @@ public class WordCountApp {
        streams.start();
        
        // Print topology
-       System.out.println(streams.toString());
+       System.out.println(builder.build().describe());
        Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
     
