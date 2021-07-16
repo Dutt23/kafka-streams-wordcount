@@ -8,13 +8,27 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 
 public class WordCountApp {
     
+    
+    public Topology createTopology() {
+        StreamsBuilder builder = new StreamsBuilder();
+        KStream<String, String> wordCountInput = builder.stream("word-count-input");
+        KTable<String, Long> wordCounts = wordCountInput.mapValues(value -> value.toLowerCase())
+        .flatMapValues(value -> Arrays.asList(value.split("\\s+")))
+        .selectKey((key, value) -> value.trim())
+        .groupByKey()
+        .count();
+//      You need to define your serdes if , it does not match the default value
+//      Produced.with(stringSerde, longSerde)
+      wordCounts.toStream().to("word-count-output", Produced.valueSerde(Serdes.Long()));
+        return builder.build();
+    }
     public static void main(String ...agrs) {
         
         
@@ -28,17 +42,10 @@ public class WordCountApp {
         
         
        StreamsBuilder builder = new StreamsBuilder();
-       KStream<String, String> wordCountInput = builder.stream("word-count-input");
-       KTable<String, Long> wordCounts = wordCountInput.mapValues(value -> value.toLowerCase())
-       .flatMapValues(value -> Arrays.asList(value.split(" ")))
-       .selectKey((key, value) -> value)
-       .groupByKey()
-       .count();
-     
-//       You need to define your serdes if , it does not match the default value
-//       Produced.with(stringSerde, longSerde)
-       wordCounts.toStream().to("word-count-output", Produced.valueSerde(Serdes.Long()));
-       KafkaStreams streams = new KafkaStreams(builder.build(), configs);
+       WordCountApp app = new WordCountApp();
+       Topology topology = app.createTopology();
+
+       KafkaStreams streams = new KafkaStreams(topology, configs);
        
        // Aggreegate 
        streams.start();
