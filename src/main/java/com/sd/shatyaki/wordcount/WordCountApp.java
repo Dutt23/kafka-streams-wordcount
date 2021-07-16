@@ -10,6 +10,7 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
 import org.apache.kafka.streams.kstream.Produced;
 
 public class WordCountApp {
@@ -33,9 +34,13 @@ public class WordCountApp {
        .selectKey((key, value) -> value)
        .groupByKey()
        .count();
-       
+     
+//       You need to define your serdes if , it does not match the default value
+//       Produced.with(stringSerde, longSerde)
        wordCounts.toStream().to("word-count-output", Produced.valueSerde(Serdes.Long()));
        KafkaStreams streams = new KafkaStreams(builder.build(), configs);
+       
+       // Aggreegate 
        streams.start();
        
        // Print topology
